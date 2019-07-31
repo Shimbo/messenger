@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -106,11 +105,7 @@ func New(mo Options) *Messenger {
 	if mo.Logger != nil {
 		log = mo.Logger
 	} else {
-		// Some backward compatibility with fmt.Println
-		logger := logrus.New()
-		logger.SetFormatter(&printlnLikeFormatter{})
-		logger.SetOutput(os.Stdout)
-		log = logger
+		log = logrus.New()
 	}
 
 	if mo.WebhookURL == "" {
@@ -121,20 +116,6 @@ func New(mo Options) *Messenger {
 	m.mux.HandleFunc(mo.WebhookURL, m.handle)
 
 	return m
-}
-
-type printlnLikeFormatter struct{}
-
-func (printlnLikeFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	var buf bytes.Buffer
-	buf.WriteString(entry.Message)
-	if len(entry.Data) > 0 {
-		buf.WriteString(": ")
-	}
-	for k, v := range entry.Data {
-		fmt.Fprintf(&buf, "%s=%v ", k, v)
-	}
-	return bytes.TrimSpace(buf.Bytes()), nil
 }
 
 // HandleMessage adds a new MessageHandler to the Messenger which will be triggered
