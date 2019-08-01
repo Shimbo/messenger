@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
 
@@ -26,6 +27,9 @@ const (
 	// https://developers.facebook.com/docs/messenger-platform/reference/messenger-profile-api/
 	MessengerProfileURL = "https://graph.facebook.com/v2.6/me/messenger_profile"
 )
+
+// Logger singleton for easier use, mostly in Response
+var log logrus.FieldLogger
 
 // Options are the settings used when creating a Messenger client.
 type Options struct {
@@ -44,6 +48,8 @@ type Options struct {
 	WebhookURL string
 	// Mux is shared mux between several Messenger objects
 	Mux *http.ServeMux
+	// Logger provides configurable logging
+	Logger logrus.FieldLogger
 }
 
 // MessageHandler is a handler used for responding to a message containing text.
@@ -95,6 +101,12 @@ func New(mo Options) *Messenger {
 		token:     mo.Token,
 		verify:    mo.Verify,
 		appSecret: mo.AppSecret,
+	}
+
+	if mo.Logger != nil {
+		log = mo.Logger
+	} else {
+		log = logrus.New()
 	}
 
 	if mo.WebhookURL == "" {
@@ -282,21 +294,20 @@ func (m *Messenger) handle(w http.ResponseWriter, r *http.Request) {
 	err := json.Unmarshal(body, &rec)
 	if err != nil {
 		err = xerrors.Errorf("could not decode response: %w", err)
-		fmt.Println(err)
-		fmt.Println("could not decode response:", err)
+		log.Error(err)
 		respond(w, http.StatusBadRequest)
 		return
 	}
 
 	if rec.Object != "page" {
-		fmt.Println("Object is not page, undefined behaviour. Got", rec.Object)
+		log.WithField("object", rec.Object).Error("object is not page, undefined behaviour")
 		respond(w, http.StatusUnprocessableEntity)
 		return
 	}
 
 	if m.verify {
 		if err := m.checkIntegrity(r); err != nil {
-			fmt.Println("could not verify request:", err)
+			log.WithError(err).Error("could not verify request")
 			respond(w, http.StatusUnauthorized)
 			return
 		}
@@ -354,7 +365,7 @@ func (m *Messenger) dispatch(r Receive) {
 		for _, info := range entry.Messaging {
 			a := m.classify(info)
 			if a == UnknownAction {
-				fmt.Println("Unknown action:", info)
+				log.WithField("action", info).Warn("unknown action")
 				continue
 			}
 
