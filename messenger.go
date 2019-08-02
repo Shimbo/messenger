@@ -522,6 +522,11 @@ func (m *Messenger) classify(info MessageInfo) Action {
 // newVerifyHandler returns a function which can be used to handle webhook verification
 func newVerifyHandler(token string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		fields := make(logrus.Fields)
+		for k, v := range r.URL.Query() {
+			fields[k] = v
+		}
+		log.WithFields(fields).WithField("token", token).Println("webhook verification request")
 		if r.FormValue("hub.verify_token") == token {
 			fmt.Fprintln(w, r.FormValue("hub.challenge"))
 			return
