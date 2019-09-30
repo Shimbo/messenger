@@ -1,4 +1,4 @@
-module github.com/paked/messenger
+module github.com/Shimbo/messenger
 
 require (
 	github.com/sirupsen/logrus v1.4.2
