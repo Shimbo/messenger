@@ -1,4 +1,4 @@
-module github.com/Shimbo/messenger
+module github.com/Shimbo/messenger/v2
 
 require (
 	github.com/sirupsen/logrus v1.4.2
