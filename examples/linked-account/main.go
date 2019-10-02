@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/paked/messenger"
+	"github.com/Shimbo/messenger"
 )
 
 const (
